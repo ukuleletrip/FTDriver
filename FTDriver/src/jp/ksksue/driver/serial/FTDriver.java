@@ -106,18 +106,24 @@ public class FTDriver {
 
     private boolean beginDevice(UsbDevice device) {
     	List<FTSerialPort> newPorts = new ArrayList<FTSerialPort>();
-  	  	List<UsbInterface> intfs = findUSBInterfaceByVIDPID(device, IDS);
         UsbDeviceConnection connection = mManager.openDevice(device);
         if (connection == null) {
         	// next device
         	return false;
         }
-    	for (UsbInterface intf : intfs) {
-    		FTSerialPort port = createPort(connection, intf);
-    		if (port != null) {
-    			newPorts.add(port);
-    		}
-    	}
+        Log.d(TAG, "check ids of device: " + device);
+        int count = device.getInterfaceCount();
+        for (int i = 0; i < count; i++) {
+            UsbInterface intf = device.getInterface(i);
+            for (UsbId id : IDS) {
+                if (device.getVendorId() == id.mVid && device.getProductId() == id.mPid) {
+                    FTSerialPort port = createPort(connection, intf, i + ((count > 1)? 1 : 0));
+                    if (port != null) {
+                        newPorts.add(port);
+                    }
+                }
+            }
+        }
     	if (newPorts.size() > 0) {
     		// use this device.
     		// [TODO] in current version, it supports only one device
@@ -135,6 +141,9 @@ public class FTDriver {
 		if (mDevice != null && mDevice.equals(deviceName)) {
 			Log.d(TAG, "USB interface removed");
 	        if (mDeviceConnection != null) {
+	            for (FTSerialPort port : mPorts) {
+	                port.close();
+	            }
 	        	mPorts.clear();
 	            mDeviceConnection.close();
 	            mDevice = null;
@@ -144,31 +153,16 @@ public class FTDriver {
     }
     
     // Sets the current USB device and interface
-    private FTSerialPort createPort(UsbDeviceConnection connection, UsbInterface intf) {
+    private FTSerialPort createPort(UsbDeviceConnection connection, UsbInterface intf, int intfNo) {
     	try {
-    		return new FTSerialPort(connection, intf, intf.getId());
+            // intf.getId() doesn't return value I expected.
+            return new FTSerialPort(connection, intf, intfNo);
         } catch (Exception e) {
             Log.e(TAG, "error creating serial port", e);
         }
         return null;
     }
 
-    // searches for an interface on the given USB device by VID and PID
-    private List<UsbInterface> findUSBInterfaceByVIDPID(UsbDevice device, UsbId[] ids) {
-    	List<UsbInterface> intfs = new ArrayList<UsbInterface>();
-        Log.d(TAG, "findUSBInterface " + device);
-        int count = device.getInterfaceCount();
-        for (int i = 0; i < count; i++) {
-            UsbInterface intf = device.getInterface(i);
-            for (UsbId id : ids) {
-            	if (device.getVendorId() == id.mVid && device.getProductId() == id.mPid) {
-            		intfs.add(intf);
-            	}
-            }
-        }
-        return intfs;
-    }
-    
     // when insert the device USB plug into a USB port
     public boolean usbAttached(Intent intent) {
         Log.d(TAG, "USB device attached");

@@ -2,7 +2,7 @@
  * Copyright (C) 2011 @ksksue
  * Licensed under the Apache License, Version 2.0
  * http://www.apache.org/licenses/LICENSE-2.0
- * 
+ *
  * 2011-12-12 modified by Ukuleletrip (@darkukll)
  */
 package jp.ksksue.driver.serial;
@@ -55,10 +55,10 @@ class FTSerialInput extends InputStream {
             }
             // 1st and 2nd bytes are status bytes, they should be skipped.
             // FIXME shift rbuf's pointer 2 to 0. (I don't know how to do.)
-            String dump = Integer.toHexString(rbuf[0]) + " " + Integer.toHexString(rbuf[1]) + " ";
+            String dump = String.format("%02X %02X ", rbuf[0], rbuf[1]);
             for (int i = 0; i < len-2; ++i) {
                 buffer[offset + readLen + i] = rbuf[i + 2];
-                dump += Integer.toHexString(rbuf[i+2]) + " ";
+                dump += String.format("%02X ", rbuf[i+2]);
             }
             Log.d(TAG, "read " + len + " bytes:" + dump);
             readLen += (len - 2);
@@ -98,7 +98,7 @@ class FTSerialOutput extends OutputStream {
             String dump = "";
             for (int i=0; i < writeLen; i++) {
                 writeBuffer[i] = buffer[offset + writtenLen + i];
-                dump += Integer.toHexString(writeBuffer[i]) + " ";
+                dump += String.format("%02X ", writeBuffer[i]);
             }
             Log.d(TAG, "write: " + dump);
             int len;
@@ -117,11 +117,13 @@ public class FTSerialPort {
     private FTSerialInput mInputStream;
     private FTSerialOutput mOutputStream;
     private int mInterfaceNo;
+    private boolean mIsOpened;
     
     public FTSerialPort(UsbDeviceConnection conn, UsbInterface intf, int intfNo) {
         mDeviceConnection = conn;
         mInterface = intf;
         mInterfaceNo = intfNo;
+        mIsOpened = false;
         if (mInterface.getEndpointCount() < 2) {
             throw new IllegalArgumentException(
                     "interface " + mInterface.toString() + " does not have 2 endpoints");
@@ -131,15 +133,22 @@ public class FTSerialPort {
     }
     
     public void open(int baudrate) {
+        if (mIsOpened) {
+            return;
+        }
         if (!mDeviceConnection.claimInterface(mInterface, false)) {
             throw new IllegalArgumentException(
                     "interface " + mInterface.toString() + " failed to claim");
         }
+        mIsOpened = true;
         initFTDIChip(baudrate, mInterfaceNo);
     }
     
     public void close() {
-        mDeviceConnection.releaseInterface(mInterface);
+        if (mIsOpened) {
+            mDeviceConnection.releaseInterface(mInterface);
+            mIsOpened = false;
+        }
     }
     
     public InputStream getInputStream() {
