@@ -55,8 +55,25 @@ public class FTDriver {
         mPorts = new ArrayList<FTSerialPort>();
     }
     
+    public String[] getPortNames() {
+        String[] names = new String[mPorts.size()];
+        for (int i=0; i < mPorts.size(); i++) {
+            names[i] = mPorts.get(i).getPortName();
+        }
+        return names;
+    }
+    
     public FTSerialPort getPort(int index) {
         return mPorts.get(index);
+    }
+    
+    public FTSerialPort getPort(String portName) {
+        for (FTSerialPort port : mPorts) {
+            if (portName.equals(port.getPortName())) {
+                return port;
+            }
+        }
+        return null;
     }
     
     public FTSerialPort getPort() {
@@ -117,7 +134,7 @@ public class FTDriver {
             UsbInterface intf = device.getInterface(i);
             for (UsbId id : IDS) {
                 if (device.getVendorId() == id.mVid && device.getProductId() == id.mPid) {
-                    FTSerialPort port = createPort(connection, intf, i + ((count > 1)? 1 : 0));
+                    FTSerialPort port = createPort(connection, device.getDeviceName(), intf, i + ((count > 1)? 1 : 0));
                     if (port != null) {
                         newPorts.add(port);
                     }
@@ -153,10 +170,10 @@ public class FTDriver {
     }
     
     // Sets the current USB device and interface
-    private FTSerialPort createPort(UsbDeviceConnection connection, UsbInterface intf, int intfNo) {
+    private FTSerialPort createPort(UsbDeviceConnection connection, String name, UsbInterface intf, int intfNo) {
     	try {
             // intf.getId() doesn't return value I expected.
-            return new FTSerialPort(connection, intf, intfNo);
+            return new FTSerialPort(connection, name, intf, intfNo);
         } catch (Exception e) {
             Log.e(TAG, "error creating serial port", e);
         }

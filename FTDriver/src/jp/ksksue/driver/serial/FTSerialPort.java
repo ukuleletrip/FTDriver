@@ -118,12 +118,14 @@ public class FTSerialPort {
     private FTSerialOutput mOutputStream;
     private int mInterfaceNo;
     private boolean mIsOpened;
+    private String mName;
     
-    public FTSerialPort(UsbDeviceConnection conn, UsbInterface intf, int intfNo) {
+    public FTSerialPort(UsbDeviceConnection conn, String name, UsbInterface intf, int intfNo) {
         mDeviceConnection = conn;
         mInterface = intf;
         mInterfaceNo = intfNo;
         mIsOpened = false;
+        mName = (intfNo == 0)? name : String.format("%s:%d", name, intfNo); 
         if (mInterface.getEndpointCount() < 2) {
             throw new IllegalArgumentException(
                     "interface " + mInterface.toString() + " does not have 2 endpoints");
@@ -149,6 +151,10 @@ public class FTSerialPort {
             mDeviceConnection.releaseInterface(mInterface);
             mIsOpened = false;
         }
+    }
+    
+    public String getPortName() {
+        return mName;
     }
     
     public InputStream getInputStream() {
