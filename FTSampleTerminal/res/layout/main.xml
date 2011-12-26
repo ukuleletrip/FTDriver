@@ -23,7 +23,14 @@
             android:layout_width="wrap_content"
             android:layout_height="wrap_content"
             android:text="Write" android:layout_weight="0"/>
-    </LinearLayout>
+            
+        <Spinner
+            android:id="@+id/portSelector"
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:layout_weight="1" />
+        
+        </LinearLayout>
 
     <ScrollView
         android:id="@+id/scrollView1"
